@@ -79,7 +79,7 @@ It's a full-stack portfolio project: a NestJS + PostgreSQL API, and a React stor
 | Forms | react-hook-form + Zod |
 | Backend | NestJS 11, TypeORM, class-validator, JWT auth, bcrypt |
 | Database | PostgreSQL (migrations + a seed script for the demo catalog) |
-| Testing | Jest unit tests (API) |
+| Testing | Jest: API unit + HTTP tests (supertest, in-memory repos); frontend with React Testing Library (SWC transform) |
 
 ## Project structure
 
@@ -142,10 +142,12 @@ These are local defaults only. Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` before the
 | | `npm run migration:run` | Apply database migrations (use this in production) |
 | | `npm run seed` | Load the demo catalog if the products table is empty |
 | | `npm run seed -- --reset` | **Delete all products**, then reload the catalog |
-| | `npm test` | Unit tests |
+| | `npm test` | Unit + HTTP tests (no database needed) |
 | `frontend` | `npm run dev` | Dev server |
 | | `npm run build` | Typecheck + production build |
 | | `npm run lint` | Lint (oxlint) |
+| | `npm test` | Jest + React Testing Library |
+| | `npm run test:coverage` | Tests with a coverage report |
 
 ## API
 
