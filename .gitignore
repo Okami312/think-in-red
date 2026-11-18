@@ -1,0 +1,20 @@
+# Dependencies & builds
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Secrets — use the .env.example files as templates
+.env
+.env.*
+!.env.example
+
+# Local leftovers
+ecommerce-main.zip
+*.bak
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json

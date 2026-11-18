@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#121216" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ThinkInRed — ThinkPad laptops, monitors &amp; gear</title>
+    <meta name="description" content="A portfolio e-commerce demo for pre-owned ThinkPad gear from 2010–2020: laptops, ThinkCentre desktops, monitors, keyboards, mice and bags." />
+      <script>
+      try {
+        var t = localStorage.getItem("ecommerce.theme");
+        if (t !== "light" && (t !== "system" || matchMedia("(prefers-color-scheme: dark)").matches))
+          document.documentElement.classList.add("dark");
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

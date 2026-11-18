@@ -1,0 +1,185 @@
+{
+	"info": {
+		"_postman_id": "46eb1c6e-14da-48f2-bf6f-c88e1905ce16",
+		"name": "Ecommerce",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "9876725"
+	},
+	"item": [
+		{
+			"name": "Login",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{baseUrl}}/auth/login",
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"auth": {
+					"type": "noauth"
+				}
+			},
+			"response": [],
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"if (pm.response.code === 200) {",
+							"  pm.collectionVariables.set('token', pm.response.json().access_token);",
+							"}"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Get all",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "{{baseUrl}}/products",
+				"auth": {
+					"type": "noauth"
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{baseUrl}}/products",
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"iPhone 17\",\n  \"category\": \"electronics\",\n  \"description\": \"Lorem ipsum...\",\n  \"price\": 2299.99,\n  \"currency\": \"USD\",\n  \"available_quantity\": 200,\n  \"sold_from\": null,\n  \"sold_to\": null\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"response": [],
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"if (pm.response.code === 201) {",
+							"  pm.collectionVariables.set('productId', pm.response.json().id);",
+							"}"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Get one",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "{{baseUrl}}/products/{{productId}}",
+				"auth": {
+					"type": "noauth"
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{baseUrl}}/products/{{productId}}",
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"iPhone 17 PRO\",\n  \"sold_from\": \"2026-12-01\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": "{{baseUrl}}/products/{{productId}}",
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000"
+		},
+		{
+			"key": "token",
+			"value": ""
+		},
+		{
+			"key": "productId",
+			"value": "1"
+		}
+	]
+}
