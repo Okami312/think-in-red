@@ -49,4 +49,13 @@ describe('main.ts bootstrap', () => {
     await importMain();
     expect(app.listen).toHaveBeenCalledWith(3000);
   });
+
+  // Vercel's NestJS runtime reads this file's exports and refuses to start if
+  // it exports anything, so bootstrap must stay private.
+  it('exports nothing, so Vercel accepts it as the entry point', async () => {
+    const exported = Object.keys(await import('./main')).filter(
+      (key) => key !== '__esModule',
+    );
+    expect(exported).toEqual([]);
+  });
 });
