@@ -1,11 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ArrowDownIcon, ArrowUpIcon, Loader2Icon, PlusIcon, XIcon } from "lucide-react"
-import { useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
 import { DatePicker } from "@/components/date-picker"
-import { ProductVisual } from "@/components/product-visual"
+import { PhotoManager } from "@/components/photo-manager"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -21,13 +21,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { CATEGORIES, CATEGORY_SLUGS, isCategory } from "@/lib/categories"
+import { errorMessage } from "@/lib/errors"
+import { IMAGE_URL, MAX_PHOTOS, productPhotos } from "@/lib/images"
 import { useCreateProduct, useUpdateProduct } from "@/lib/products"
 import type { Product, ProductInput } from "@/lib/types"
 
 const CURRENCIES = ["EUR", "USD", "GBP", "RON", "CHF"]
-
-// Full URL, or a path to a file in public/ (e.g. /products/x1-carbon-gen-8.jpg).
-const IMAGE_URL = /^(https?:\/\/\S+|\/\S*)$/i
 
 // Text inputs hold strings; they're converted to the API's types on submit.
 // Rules mirror the backend DTOs.
@@ -41,19 +40,11 @@ const schema = z
     available_quantity: z.string().trim().regex(/^\d+$/, "Enter a whole number, 0 or more"),
     sold_from: z.string(),
     sold_to: z.string(),
-    image_url: z
-      .string()
-      .trim()
-      .max(2048)
-      .refine((v) => v === "" || IMAGE_URL.test(v), "Use an http(s):// URL or a path like /products/x.jpg"),
     featured: z.boolean(),
-    gallery: z
-      .array(
-        z.object({
-          url: z.string().trim().min(1, "Enter a URL or path").max(2048).refine((v) => IMAGE_URL.test(v), "Use an http(s):// URL or a path like /products/x.jpg"),
-        }),
-      )
-      .max(12, "At most 12 gallery images"),
+    /** Cover first, then the gallery. Split into image_url + gallery on submit. */
+    photos: z
+      .array(z.string().max(2048).regex(IMAGE_URL, "Use an http(s):// URL or a path like /products/x.jpg"))
+      .max(MAX_PHOTOS, `At most ${MAX_PHOTOS} photos`),
     specs: z
       .array(
         z.object({
@@ -80,9 +71,8 @@ function toFormValues(product?: Product | null): FormValues {
     available_quantity: product ? String(product.available_quantity) : "",
     sold_from: product?.sold_from ?? "",
     sold_to: product?.sold_to ?? "",
-    image_url: product?.image_url ?? "",
     featured: product?.featured ?? false,
-    gallery: (product?.gallery ?? []).map((url) => ({ url })),
+    photos: product ? productPhotos(product) : [],
     specs: product?.specs ?? [],
   }
 }
@@ -97,9 +87,9 @@ function toInput(v: FormValues): ProductInput {
     available_quantity: Number(v.available_quantity),
     sold_from: v.sold_from || null,
     sold_to: v.sold_to || null,
-    image_url: v.image_url.trim() || null,
+    image_url: v.photos[0] ?? null,
     featured: v.featured,
-    gallery: v.gallery.map((g) => g.url.trim()),
+    gallery: v.photos.slice(1),
     specs: v.specs.map((s) => ({ label: s.label.trim(), value: s.value.trim() })),
   }
 }
@@ -117,14 +107,16 @@ export function ProductFormDialog({
   const isEdit = Boolean(product)
   const create = useCreateProduct()
   const update = useUpdateProduct()
-  const pending = create.isPending || update.isPending
+  const [uploading, setUploading] = useState(false)
+  const onUploadingChange = useCallback((u: boolean) => setUploading(u), [])
+  const saving = create.isPending || update.isPending
+  const pending = saving || uploading
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: toFormValues(product),
   })
   const specs = useFieldArray({ control: form.control, name: "specs" })
-  const gallery = useFieldArray({ control: form.control, name: "gallery" })
 
   // Reset whenever the dialog opens for a (possibly different) product.
   useEffect(() => {
@@ -134,7 +126,6 @@ export function ProductFormDialog({
   const currencies =
     product && !CURRENCIES.includes(product.currency) ? [...CURRENCIES, product.currency] : CURRENCIES
   const previewCategory = useWatch({ control: form.control, name: "category" })
-  const previewUrl = useWatch({ control: form.control, name: "image_url" })
 
   async function onSubmit(values: FormValues) {
     const input = toInput(values)
@@ -148,7 +139,7 @@ export function ProductFormDialog({
       }
       onOpenChange(false)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Something went wrong")
+      toast.error(errorMessage(error, "Something went wrong"))
     }
   }
 
@@ -206,7 +197,7 @@ export function ProductFormDialog({
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="p-description">Description</FieldLabel>
-                  <Textarea id="p-description" rows={3} aria-invalid={fieldState.invalid} {...field} />
+                  <Textarea id="p-description" rows={6} placeholder="Condition, what’s in the box, battery health, known flaws…" aria-invalid={fieldState.invalid} {...field} />
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
@@ -284,29 +275,23 @@ export function ProductFormDialog({
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-[1fr_7rem]">
-              <Controller
-                name="image_url"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="p-image">Image URL</FieldLabel>
-                    <Input id="p-image" placeholder="/products/x1-carbon-gen-8.jpg…" aria-invalid={fieldState.invalid} {...field} />
-                    {fieldState.invalid ? (
-                      <FieldError errors={[fieldState.error]} />
-                    ) : (
-                      <FieldDescription>Optional. A file in <code className="font-mono">public/products/</code> or a full URL. Without one, the category illustration is shown.</FieldDescription>
-                    )}
-                  </Field>
-                )}
-              />
-              <ProductVisual
-                category={previewCategory}
-                imageUrl={IMAGE_URL.test(previewUrl) ? previewUrl : null}
-                className="aspect-4/3 self-start rounded-lg border sm:mt-6"
-                artClassName="w-4/5"
-              />
-            </div>
+            <Controller
+              name="photos"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <FieldSet data-invalid={fieldState.invalid}>
+                  <FieldLegend variant="label">Photos</FieldLegend>
+                  <FieldDescription>
+                    Up to {MAX_PHOTOS}. The first photo is the cover, shown in the shop; all of them appear on the product page.
+                  </FieldDescription>
+                  <PhotoManager value={field.value} onChange={field.onChange} category={previewCategory} onUploadingChange={onUploadingChange} />
+                  {fieldState.invalid && (
+                    // Array fields report errors on the array, its root, or individual items.
+                    <FieldError errors={[{ message: fieldState.error?.message ?? fieldState.error?.root?.message ?? "One of the photo URLs isn’t valid" }]} />
+                  )}
+                </FieldSet>
+              )}
+            />
 
             <Controller
               name="featured"
@@ -321,41 +306,6 @@ export function ProductFormDialog({
                 </Field>
               )}
             />
-
-            <FieldSet>
-              <FieldLegend variant="label">Gallery</FieldLegend>
-              <FieldDescription>Extra images shown as thumbnails on the product page.</FieldDescription>
-              <div className="space-y-2">
-                {gallery.fields.map((row, i) => (
-                  <div key={row.id} className="flex items-start gap-2">
-                    <Controller
-                      name={`gallery.${i}.url`}
-                      control={form.control}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid} className="flex-1 gap-1">
-                          <Input placeholder="/products/x1-carbon-gen-8-ports.webp…" aria-label={`Gallery image ${i + 1}`} aria-invalid={fieldState.invalid} {...field} />
-                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                        </Field>
-                      )}
-                    />
-                    <Button type="button" variant="ghost" size="icon" aria-label={`Remove gallery image ${i + 1}`} onClick={() => gallery.remove(i)}>
-                      <XIcon />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="self-start"
-                disabled={gallery.fields.length >= 12}
-                onClick={() => gallery.append({ url: "" })}
-              >
-                <PlusIcon data-icon="inline-start" />
-                Add Image
-              </Button>
-            </FieldSet>
 
             <FieldSet>
               <FieldLegend variant="label">Specifications</FieldLegend>
@@ -420,7 +370,7 @@ export function ProductFormDialog({
           </Button>
           <Button type="submit" form="product-form" disabled={pending}>
             {pending && <Loader2Icon data-icon="inline-start" className="animate-spin" />}
-            {pending ? "Saving…" : isEdit ? "Save Changes" : "Create Product"}
+            {uploading ? "Uploading photos…" : saving ? "Saving…" : isEdit ? "Save Changes" : "Create Product"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,11 +1,13 @@
-import { AlertTriangleIcon, CheckCircle2Icon, CircleSlashIcon, MoreHorizontalIcon, PackageIcon, PencilIcon, PlusIcon, SearchIcon, StarIcon, Trash2Icon, type LucideIcon } from "lucide-react"
+import { AlertTriangleIcon, CheckCircle2Icon, CircleSlashIcon, ImageOffIcon, MoreHorizontalIcon, PackageIcon, PencilIcon, PlusIcon, SearchIcon, StarIcon, Trash2Icon, type LucideIcon } from "lucide-react"
 import { useMemo, useState } from "react"
 import { Link } from "react-router"
 import { AvailabilityBadge, LOW_STOCK } from "@/components/availability-badge"
+import { BulkDeleteDialog } from "@/components/bulk-delete-dialog"
 import { DeleteProductDialog } from "@/components/delete-product-dialog"
 import { ErrorState } from "@/components/error-state"
 import { ProductFormDialog } from "@/components/product-form-dialog"
 import { ProductVisual } from "@/components/product-visual"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -21,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { CATEGORIES, categoryLabel, categoryStyle } from "@/lib/categories"
 import { formatPrice, getAvailability } from "@/lib/format"
+import { hasPhotos } from "@/lib/images"
 import { useProducts } from "@/lib/products"
 import type { Product } from "@/lib/types"
 
@@ -42,6 +45,8 @@ export function AdminProductsPage() {
   const { data: products, isPending, error, refetch } = useProducts()
   const [search, setSearch] = useState("")
   const [category, setCategory] = useState("all")
+  const [photos, setPhotos] = useState<"all" | "with" | "without">("all")
+  const [bulkOpen, setBulkOpen] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Product | null>(null)
   const [deleting, setDeleting] = useState<Product | null>(null)
@@ -51,9 +56,10 @@ export function AdminProductsPage() {
     return (products ?? []).filter(
       (p) =>
         (category === "all" || p.category === category) &&
+        (photos === "all" || hasPhotos(p) === (photos === "with")) &&
         (!q || `${p.id} ${p.name}`.toLowerCase().includes(q)),
     )
-  }, [products, search, category])
+  }, [products, search, category, photos])
 
   const stats = useMemo(() => {
     const list = products ?? []
@@ -123,6 +129,22 @@ export function AdminProductsPage() {
           ))}
         </SelectContent>
       </Select>
+      <Select value={photos} onValueChange={(v) => setPhotos(v as typeof photos)}>
+        <SelectTrigger className="w-full sm:w-40" aria-label="Filter by photos">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Any photos</SelectItem>
+          <SelectItem value="with">With photos</SelectItem>
+          <SelectItem value="without">No photos</SelectItem>
+        </SelectContent>
+      </Select>
+      {photos === "without" && filtered.length > 0 && (
+        <Button variant="destructive" className="sm:ml-auto" onClick={() => setBulkOpen(true)}>
+          <Trash2Icon data-icon="inline-start" />
+          Delete {filtered.length === 1 ? "this product" : `all ${filtered.length}`}
+        </Button>
+      )}
       </div>
 
       {error ? (
@@ -188,6 +210,12 @@ export function AdminProductsPage() {
                               <span className="truncate">{p.name}</span>
                               {p.featured && <StarIcon className="size-3.5 shrink-0 fill-warning text-warning" aria-label="Featured" />}
                             </Link>
+                            {!hasPhotos(p) && (
+                              <Badge variant="outline" className="mt-0.5 gap-1 text-muted-foreground">
+                                <ImageOffIcon aria-hidden />
+                                No photos
+                              </Badge>
+                            )}
                             <span style={categoryStyle(p.category)} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                               <span className="size-1.5 rounded-full bg-(--accent)" aria-hidden />
                               {categoryLabel(p.category)}
@@ -229,6 +257,8 @@ export function AdminProductsPage() {
       )}
 
       <ProductFormDialog open={formOpen} onOpenChange={setFormOpen} product={editing} />
+      {/* The confirmed list is what's shown now: search + category + "No photos" filters. */}
+      <BulkDeleteDialog products={photos === "without" ? filtered : []} open={bulkOpen} onOpenChange={setBulkOpen} />
       <DeleteProductDialog product={deleting} onOpenChange={(open) => !open && setDeleting(null)} />
     </div>
   )

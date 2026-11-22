@@ -1,5 +1,6 @@
 import { RefreshCwIcon, TriangleAlertIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { errorMessage } from "@/lib/errors"
 
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   return (
@@ -8,7 +9,7 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
       <div>
         <p className="font-medium">Something Went Wrong</p>
         <p className="text-sm text-muted-foreground">
-          {error instanceof Error ? error.message : "Unknown error"}
+          {errorMessage(error, "Unknown error")}
         </p>
       </div>
       {onRetry && (

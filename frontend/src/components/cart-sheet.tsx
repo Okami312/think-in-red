@@ -36,11 +36,10 @@ export function CartSheet() {
   }, [cart.count])
 
   // Destructive actions get an undo window instead of a confirm dialog.
-  function removeWithUndo(productId: number) {
+  function removeWithUndo(product: { id: number; name: string }) {
     const before = cart.items
-    const item = before.find((i) => i.product.id === productId)
-    cart.remove(productId)
-    toast(`Removed ${item?.product.name ?? "item"}`, { action: { label: "Undo", onClick: () => cart.replace(before) } })
+    cart.remove(product.id)
+    toast(`Removed ${product.name}`, { action: { label: "Undo", onClick: () => cart.replace(before) } })
   }
   function clearWithUndo() {
     const before = cart.items
@@ -70,7 +69,7 @@ export function CartSheet() {
         className="flex w-full flex-col sm:max-w-md"
         // clicking a toast (e.g. "Undo") isn't "outside" — keep the cart open
         onInteractOutside={(e) => {
-          if ((e.target as Element | null)?.closest?.("[data-sonner-toaster]")) e.preventDefault()
+          if ((e.target as Element).closest("[data-sonner-toaster]")) e.preventDefault()
         }}
       >
         <SheetHeader>
@@ -123,7 +122,7 @@ export function CartSheet() {
                       size="icon-xs"
                       className="ml-auto text-muted-foreground"
                       aria-label={`Remove ${product.name}`}
-                      onClick={() => removeWithUndo(product.id)}
+                      onClick={() => removeWithUndo(product)}
                     >
                       <Trash2Icon />
                     </Button>

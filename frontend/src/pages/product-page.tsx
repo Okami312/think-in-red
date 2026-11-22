@@ -14,6 +14,7 @@ import { useCart } from "@/lib/cart"
 import { categoryLabel, categoryStyle } from "@/lib/categories"
 import { formatDay, formatPrice, getAvailability } from "@/lib/format"
 import { useProduct, useProducts } from "@/lib/products"
+import { productPhotos } from "@/lib/images"
 import type { Product } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { NotFoundPage } from "@/pages/not-found-page"
@@ -148,7 +149,7 @@ function ProductDetails({ product }: { product: Product }) {
 
 /** Main image + thumbnails. Switching crossfades (it's a state change, not navigation). */
 function ProductGallery({ product }: { product: Product }) {
-  const images = [product.image_url, ...product.gallery].filter((x): x is string => !!x)
+  const images = productPhotos(product)
   const [active, setActive] = useState(0)
   const current = images[active] ?? null
 

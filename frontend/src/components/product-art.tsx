@@ -173,7 +173,7 @@ function KeyboardArt() {
  * Open laptop, front view: plain lid, and a deck of the same width with a full
  * keyboard, speaker grilles, a centred TrackPoint, three buttons and a touchpad.
  */
-function LaptopArt({ animated = false }: { animated?: boolean }) {
+function LaptopArt({ animated }: { animated: boolean }) {
   // Lid and deck share the same width and corner radius.
   const x = 70
   const w = 100

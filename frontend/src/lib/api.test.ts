@@ -71,4 +71,14 @@ describe("api client", () => {
     setToken(null)
     expect(getToken()).toBeNull()
   })
+
+  it("falls back to a generic message when there's no status text or JSON", async () => {
+    fetchMock.mockReturnValue(jsonResponse(undefined, 502, ""))
+    await expect(api("/products")).rejects.toEqual(new ApiError(502, "Request failed"))
+  })
+
+  it("uses the status text when a JSON error has no message", async () => {
+    fetchMock.mockReturnValue(jsonResponse({ error: "Bad Gateway" }, 502, "Bad Gateway"))
+    await expect(api("/products")).rejects.toEqual(new ApiError(502, "Bad Gateway"))
+  })
 })

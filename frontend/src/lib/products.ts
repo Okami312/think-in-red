@@ -51,3 +51,24 @@ export function useDeleteProduct() {
     },
   })
 }
+
+/**
+ * Deletes several products, one request each, and reports which failed.
+ * Not all-or-nothing: products deleted before a failure stay deleted.
+ */
+export function useDeleteProducts() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (ids: number[]) => {
+      const results = await Promise.allSettled(
+        ids.map((id) => api<void>(`/products/${id}`, { method: "DELETE", auth: true })),
+      )
+      const deleted = ids.filter((_, i) => results[i].status === "fulfilled")
+      return { deleted, failed: ids.length - deleted.length }
+    },
+    onSuccess: ({ deleted }) => {
+      deleted.forEach((id) => qc.removeQueries({ queryKey: keys.one(id) }))
+      return qc.invalidateQueries({ queryKey: keys.all })
+    },
+  })
+}

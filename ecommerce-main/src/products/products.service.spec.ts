@@ -90,6 +90,27 @@ describe('ProductsService', () => {
     expect(repo.update).not.toHaveBeenCalled();
   });
 
+  it('counts the stored cover and gallery against the 10-photo limit on update', async () => {
+    repo.findOne.mockResolvedValue({
+      id: 1,
+      ...baseProduct,
+      image_url: '/images/cover',
+      gallery: Array.from({ length: 9 }, (_, i) => `/images/${i}`),
+    });
+    await expect(
+      service.update(1, {
+        gallery: Array.from({ length: 10 }, (_, i) => `/images/${i}`),
+      }),
+    ).rejects.toThrow(BadRequestException);
+    // Clearing the cover frees a slot.
+    await expect(
+      service.update(1, {
+        image_url: null,
+        gallery: Array.from({ length: 10 }, (_, i) => `/images/${i}`),
+      }),
+    ).resolves.toBeDefined();
+  });
+
   it('filters by category when one is given', async () => {
     repo.find.mockResolvedValue([]);
     await service.findAll('mice');

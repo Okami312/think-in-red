@@ -1,11 +1,12 @@
 import 'reflect-metadata';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import * as request from 'supertest';
 import { App } from 'supertest/types';
+import { configureApp } from '../app.setup';
 import { AdminEntity } from '../admins/admin.entity/admin.entity';
 import { AuthModule } from '../auth/auth.module';
 import { InMemoryRepository } from '../test-utils/in-memory-repository';
@@ -76,11 +77,7 @@ describe('Products & auth API (HTTP)', () => {
       .useValue(admins)
       .compile();
 
-    app = moduleRef.createNestApplication();
-    // same as main.ts
-    app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true }),
-    );
+    app = configureApp(moduleRef.createNestApplication());
     await app.init();
 
     const res = await request(app.getHttpServer())
@@ -214,6 +211,35 @@ describe('Products & auth API (HTTP)', () => {
         price: 149,
         image_url: null,
       });
+    });
+
+    it('allows up to 10 photos in total (cover + gallery) and rejects more', async () => {
+      const nine = Array.from({ length: 9 }, (_, i) => `/images/g${i}`);
+
+      // Cover + 9 gallery photos = 10: allowed.
+      const created = await http()
+        .post('/products')
+        .set(auth())
+        .send({ ...valid, image_url: '/images/cover', gallery: nine })
+        .expect(201);
+      // One more gallery photo would make 11.
+      await http()
+        .put(`/products/${body<ProductBody>(created).id}`)
+        .set(auth())
+        .send({ gallery: [...nine, '/images/extra'] })
+        .expect(400);
+
+      // The limit also counts the stored cover when only the gallery is sent.
+      const noCover = await http()
+        .post('/products')
+        .set(auth())
+        .send({ ...valid, gallery: nine })
+        .expect(201);
+      await http()
+        .put(`/products/${body<ProductBody>(noCover).id}`)
+        .set(auth())
+        .send({ image_url: '/images/cover' })
+        .expect(200);
     });
 
     it('rejects an end date before the start date', () =>

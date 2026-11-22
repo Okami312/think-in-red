@@ -9,18 +9,22 @@ import type { Product } from "@/lib/types"
 
 /** 2010 → 2020, built from the catalog. A red line draws down as you scroll. */
 export function DecadeTimeline({ products }: { products: Product[] }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const reduce = useReducedMotion()
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 75%", "end 55%"] })
-
   const byYear = new Map<number, Product[]>()
   for (const p of products) {
     const y = releaseYear(p)
     if (y === null) continue
     byYear.set(y, [...(byYear.get(y) ?? []), p])
   }
+  // Return before the scroll hooks: useScroll throws if its target ref is never attached.
+  if (byYear.size === 0) return null
+  return <Timeline byYear={byYear} />
+}
+
+function Timeline({ byYear }: { byYear: Map<number, Product[]> }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const reduce = useReducedMotion()
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 75%", "end 55%"] })
   const years = [...byYear.keys()].sort((a, b) => a - b)
-  if (years.length === 0) return null
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-24">

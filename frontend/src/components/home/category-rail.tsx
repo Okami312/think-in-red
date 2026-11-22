@@ -100,7 +100,8 @@ export function CategoryRail({ counts }: { counts?: Record<string, number> }) {
 
   if (!pinned) {
     return (
-      <section className="py-20">
+      // ref even though nothing pins here: useScroll throws if its target is never attached
+      <section ref={section} className="py-20">
         {heading}
         <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 [scrollbar-width:none]">{cards}</div>
       </section>

@@ -9,6 +9,7 @@ import { ProductEntity } from './product.entity/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import type { Category } from './categories';
+import { MAX_PHOTOS } from './photos';
 
 @Injectable()
 export class ProductsService {
@@ -44,6 +45,7 @@ export class ProductsService {
       featured: dto.featured ?? false,
     };
     this.assertValidSalePeriod(data.sold_from, data.sold_to);
+    this.assertPhotoLimit(data.image_url, data.gallery);
     return this.productsRepository.save(this.productsRepository.create(data));
   }
 
@@ -57,6 +59,10 @@ export class ProductsService {
       'sold_from' in changes ? changes.sold_from! : existing.sold_from,
       'sold_to' in changes ? changes.sold_to! : existing.sold_to,
     );
+    this.assertPhotoLimit(
+      'image_url' in changes ? changes.image_url! : existing.image_url,
+      changes.gallery ?? existing.gallery ?? [],
+    );
     if (Object.keys(changes).length > 0) {
       await this.productsRepository.update(id, changes);
     }
@@ -67,6 +73,17 @@ export class ProductsService {
     const result = await this.productsRepository.softDelete(id);
     if (result.affected === 0) {
       throw new NotFoundException(`Product with ID ${id} not found`);
+    }
+  }
+
+  private assertPhotoLimit(
+    imageUrl: string | null | undefined,
+    gallery: string[],
+  ): void {
+    if ((imageUrl ? 1 : 0) + gallery.length > MAX_PHOTOS) {
+      throw new BadRequestException(
+        `A product can have at most ${MAX_PHOTOS} photos`,
+      );
     }
   }
 

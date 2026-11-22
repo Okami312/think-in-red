@@ -60,4 +60,23 @@ describe("cart", () => {
     jest.spyOn(console, "error").mockImplementation(() => {})
     expect(() => renderHook(() => useCart())).toThrow("useCart must be used inside <CartProvider>")
   })
+
+  it("only changes the item it's asked to, keeping the others", () => {
+    const { result } = setup()
+    act(() => result.current.add(t470))
+    act(() => result.current.add(mouse, 2))
+    act(() => result.current.add(t470))
+    act(() => result.current.setQuantity(2, 5))
+    expect(result.current.items.map((i) => [i.product.id, i.quantity])).toEqual([
+      [1, 2],
+      [2, 5],
+    ])
+  })
+
+  it("refreshes the stored product details when it's added again", () => {
+    const { result } = setup()
+    act(() => result.current.add(t470))
+    act(() => result.current.add({ ...t470, price: 149 }))
+    expect(result.current.items[0].product.price).toBe(149)
+  })
 })

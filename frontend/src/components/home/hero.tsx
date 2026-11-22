@@ -21,7 +21,6 @@ export function Hero({ products }: { products: Product[] | undefined }) {
   const fade = useTransform(scrollYProgress, [0, 0.75], [1, 0])
   const glow = useTransform(scrollYProgress, [0, 1], [0.7, 1])
 
-  const laptops = products?.filter((p) => p.category === "laptops").length
   const tp25 = products?.find((p) => p.name === "ThinkPad 25")
 
   return (
@@ -128,7 +127,7 @@ export function Hero({ products }: { products: Product[] | undefined }) {
               <div>
                 <dt className="text-xs text-muted-foreground">ThinkPads</dt>
                 <dd className="font-mono text-3xl tabular-nums">
-                  <CountUp value={laptops ?? 0} />
+                  <CountUp value={products.filter((p) => p.category === "laptops").length} />
                 </dd>
               </div>
               <div>

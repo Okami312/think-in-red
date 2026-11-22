@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/lib/auth"
+import { errorMessage } from "@/lib/errors"
 
 const schema = z.object({
   email: z.email("Enter a valid email"),
@@ -35,7 +36,7 @@ export function LoginPage() {
       await auth.login(values.email, values.password)
       navigate(from, { replace: true })
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : "Login failed")
+      setServerError(errorMessage(error, "Login failed"))
     }
   }
 

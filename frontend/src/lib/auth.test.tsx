@@ -50,4 +50,24 @@ describe("auth", () => {
     expect(setup().result.current.isAuthenticated).toBe(false)
     expect(getToken()).toBeNull()
   })
+
+  it("treats a valid token without saved admin details as signed out", () => {
+    setToken(fakeJwt(Date.now() / 1000 + 3600))
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider })
+    expect(result.current.isAuthenticated).toBe(false)
+  })
+
+  it("accepts tokens without an expiry claim", () => {
+    const b64 = (o: object) => btoa(JSON.stringify(o)).replace(/=+$/, "")
+    setToken(`${b64({ alg: "HS256" })}.${b64({ sub: 1 })}.sig`)
+    localStorage.setItem("ecommerce.admin", JSON.stringify(admin))
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider })
+    expect(result.current.isAuthenticated).toBe(true)
+  })
+
+  it("throws a helpful error outside the provider", () => {
+    jest.spyOn(console, "error").mockImplementation(() => {})
+    expect(() => renderHook(() => useAuth())).toThrow("useAuth must be used inside <AuthProvider>")
+    jest.restoreAllMocks()
+  })
 })

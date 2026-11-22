@@ -17,6 +17,7 @@ import {
 } from 'class-validator';
 import { CATEGORIES, type Category } from '../categories';
 import { SpecDto } from './spec.dto';
+import { MAX_GALLERY } from '../photos';
 
 export class CreateProductDto {
   @IsNotEmpty()
@@ -64,7 +65,9 @@ export class CreateProductDto {
 
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(12)
+  @ArrayMaxSize(MAX_GALLERY, {
+    message: `a product can have at most ${MAX_GALLERY + 1} photos (cover + ${MAX_GALLERY} gallery)`,
+  })
   @Matches(/^(https?:\/\/\S+|\/\S*)$/i, {
     each: true,
     message:

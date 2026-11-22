@@ -38,7 +38,9 @@ export async function api<T>(
   options: { method?: string; body?: unknown; auth?: boolean } = {},
 ): Promise<T> {
   const headers: Record<string, string> = {}
-  if (options.body !== undefined) headers["Content-Type"] = "application/json"
+  // FormData (file uploads) sets its own multipart Content-Type with a boundary.
+  const isForm = options.body instanceof FormData
+  if (options.body !== undefined && !isForm) headers["Content-Type"] = "application/json"
   const token = options.auth ? getToken() : null
   if (token) headers.Authorization = `Bearer ${token}`
 
@@ -47,7 +49,8 @@ export async function api<T>(
     res = await fetch(`${API_URL}${path}`, {
       method: options.method ?? "GET",
       headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body:
+        options.body === undefined ? undefined : isForm ? (options.body as FormData) : JSON.stringify(options.body),
     })
   } catch {
     throw new ApiError(0, "Can't reach the server. Is the backend running?")

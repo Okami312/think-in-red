@@ -2,7 +2,7 @@ import SplitText from "@/components/SplitText"
 import { cn } from "@/lib/utils"
 
 /** Brand red used as the starting colour for heading letters (settles to the text colour). */
-export const ACCENT_HEX = "#e0281f"
+const ACCENT_HEX = "#e0281f"
 
 export function SectionHeading({
   index,

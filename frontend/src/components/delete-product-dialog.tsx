@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { useDeleteProduct } from "@/lib/products"
+import { errorMessage } from "@/lib/errors"
 import type { Product } from "@/lib/types"
 
 export function DeleteProductDialog({
@@ -23,13 +24,14 @@ export function DeleteProductDialog({
   const remove = useDeleteProduct()
 
   async function confirm() {
-    if (!product) return
+    // Only reachable while open, i.e. while there's a product.
+    const target = product!
     try {
-      await remove.mutateAsync(product.id)
-      toast.success(`Deleted ${product.name}`)
+      await remove.mutateAsync(target.id)
+      toast.success(`Deleted ${target.name}`)
       onOpenChange(false)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Couldn't delete the product")
+      toast.error(errorMessage(error, "Couldn't delete the product"))
     }
   }
 

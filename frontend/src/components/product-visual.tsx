@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { ProductArt } from "@/components/product-art"
 import { categoryStyle } from "@/lib/categories"
+import { resolveImageUrl } from "@/lib/images"
 import { cn } from "@/lib/utils"
 
 /**
@@ -26,7 +27,8 @@ export function ProductVisual({
 }) {
   // Remember which URL failed, so a new URL gets a fresh attempt.
   const [failedUrl, setFailedUrl] = useState<string | null>(null)
-  const showImage = imageUrl && failedUrl !== imageUrl
+  const src = resolveImageUrl(imageUrl)
+  const showImage = src && failedUrl !== src
 
   return (
     <div
@@ -44,12 +46,12 @@ export function ProductVisual({
     >
       {showImage ? (
         <img
-          src={imageUrl}
+          src={src}
           alt={alt}
           width={800}
           height={600}
           loading="lazy"
-          onError={() => setFailedUrl(imageUrl)}
+          onError={() => setFailedUrl(src)}
           className={cn("size-full object-contain p-[7%] drop-shadow-2xl", imageClassName)}
         />
       ) : (

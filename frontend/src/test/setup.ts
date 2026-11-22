@@ -46,6 +46,11 @@ Object.defineProperty(window, "matchMedia", {
 window.scrollTo = () => {}
 Element.prototype.scrollIntoView = () => {}
 
+// Radix Select uses pointer capture when it opens.
+Element.prototype.hasPointerCapture = () => false
+Element.prototype.setPointerCapture = () => {}
+Element.prototype.releasePointerCapture = () => {}
+
 afterEach(() => {
   localStorage.clear()
 })
